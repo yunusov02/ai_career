@@ -1,0 +1,14 @@
+I am building SkillBridge application wihere user select paths like
+IT design Marketing finance business etc... all of the path should store in database
+after selecting the paths based on that path AI will generate 25 questions and questions should be behavioral and indivial for each path
+
+user will answer the questions based the answers ai will select shu userga mos sohani topib beradi masalan user it tanladi va javoblari uni 
+AI muhandisi ga olib borishi kerak va so'ngida mana yo'nalish bo'yicha mana shu userga kerakli bo'lgan barcha ma'lumotlar linklar adabiyotlarni taqdim qilishi kerak
+va o'rganish jarayonida unda AI tutor bo'ladi qanaqadir savollari bo'lsa mana shu AI tutorga murojaat qilib undan savol so'rashi mumkin va AI tutor uni yo'nalishini 
+nimani o'rganayotganligini bilishi kerak va unga chiroyli to'liq javob berishi kerak. va barcha userni o'rgangan ma'lumotlari barchasi database da saqlanishi kerak
+
+hozir menda applicaiton bor lekin u men hohlaganday ishlamayapti
+
+misol uchun user design tanlasa unga so'ngida software engineering ni chiqarayapti
+
+projectga qara va barcha modullarni ko'r xato va kamchiliklarini tuzat 

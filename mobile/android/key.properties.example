@@ -1,0 +1,4 @@
+storePassword=change-me
+keyPassword=change-me
+keyAlias=skillbridge
+storeFile=/absolute/path/to/skillbridge-upload-keystore.jks

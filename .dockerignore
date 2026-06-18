@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.eggs
+*.egg-info
+*.egg
+
+# Virtual environments
+venv
+.venv
+env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+
+# Build
+dist
+build
+*.spec
+
+# Documentation
+docs/_build
+
+# Data and logs (use volumes instead)
+*.db
+*.sqlite
+*.sqlite3
+logs/
+
+# Node (if any frontend exists)
+node_modules
+.next
+out
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
