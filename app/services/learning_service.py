@@ -1,22 +1,29 @@
 """Detailed learning paths and offline module tutoring."""
 
 import re
+from functools import lru_cache
 from typing import Dict, List, Tuple
 
 from app.schemas.guide import (
-    LearningModule,
     LearningPathRequest,
     LearningPathResponse,
-    LearningResource,
     ModuleChatRequest,
     ModuleChatResponse,
     ModuleQuizQuestion,
     QuizOption,
 )
+from app.services.learning import (
+    KeywordCatalogResolver,
+    LearningPathBuilder,
+    TutorContextService,
+)
 
 
 Resource = Tuple[str, str, str]
 ModuleSeed = Tuple[str, str, List[str], List[Resource]]
+
+_catalog_resolver = KeywordCatalogResolver()
+_tutor_context = TutorContextService()
 
 
 COMMON = {
@@ -1382,87 +1389,13 @@ LOCALIZED_GENERIC_SEEDS: Dict[str, List[ModuleSeed]] = {
 
 
 def _career_domain(career_name: str) -> str:
-    value = career_name.lower()
-    if any(w in value for w in ["software", "developer", "data scientist", "ai ", "ml ", "machine learning", "it ", "devops", "cyber", "cloud", "backend", "frontend", "fullstack", "dasturchi", "разработ", "программист"]):
-        return "technology"
-    if any(w in value for w in ["financ", "account", "moliya", "финанс", "invest", "banker", "tahlilchi moliy"]):
-        return "finance"
-    if any(w in value for w in ["market", "маркет", "content strateg", "seo", "brand strateg"]):
-        return "marketing"
-    if any(w in value for w in ["teach", "educat", "learning designer", "o'qituv", "ta'lim", "образован", "teacher", "tutor", "instructor", "curriculum"]):
-        return "education"
-    if any(w in value for w in ["ux", "ui ", "graphic design", "visual design", "product designer", "dizayn", "дизайн", "ux/ui", "motion design"]):
-        return "design"
-    if any(w in value for w in ["engineer", "mechanical", "electrical", "civil", "muhandis", "инженер"]):
-        return "engineering"
-    if any(w in value for w in ["health", "medical", "nurse", "doctor", "clinical", "tibbiy", "sog'liq", "здравоохр", "медик", "врач"]):
-        return "healthcare"
-    if any(w in value for w in ["business", "product manager", "strategy", "biznes", "бизнес", "стратег", "менеджер продукт"]):
-        return "business"
-    return "generic"
+    """Backward-compatible broad catalog resolver."""
+    return _catalog_resolver.resolve_broad(career_name)
 
 
 def _find_catalog_key(career_name: str) -> str:
-    """Map a career name to a SUB_CATALOGS key, falling back to _career_domain."""
-    v = career_name.lower()
-    # IT sub-specialties
-    if any(w in v for w in ["data scientist", "machine learning", "ml engineer", "ai engineer", "deep learning", "nlp engineer"]):
-        return "it_data"
-    if any(w in v for w in ["devops", "site reliability", "sre", "platform engineer", "cloud engineer", "cloud architect"]):
-        return "it_devops"
-    if any(w in v for w in ["software engineer", "backend developer", "frontend developer", "full stack", "fullstack developer", "web developer", "mobile developer", "dasturchi", "разработчик"]):
-        return "it_software"
-    # Design sub-specialties
-    if any(w in v for w in ["ux/ui", "ux designer", "ui designer", "user experience", "user interface"]):
-        return "design_ux"
-    if any(w in v for w in ["graphic design", "visual design", "motion design", "illustration"]):
-        return "design_graphic"
-    if any(w in v for w in ["product designer", "product design"]):
-        return "design_product"
-    # Marketing sub-specialties
-    if any(w in v for w in ["seo", "search engine optim"]):
-        return "marketing_seo"
-    if any(w in v for w in ["content strateg", "content market", "content writer", "copywriter"]):
-        return "marketing_content"
-    if any(w in v for w in ["digital market", "performance market", "growth market", "paid media"]):
-        return "marketing_digital"
-    # Finance sub-specialties
-    if any(w in v for w in ["investment", "equity", "portfolio manager", "asset manager", "fund manager", "venture capital", "private equity"]):
-        return "finance_investment"
-    if any(w in v for w in ["financial planner", "financial advisor", "wealth manager", "cfp", "personal finance"]):
-        return "finance_planning"
-    if any(w in v for w in ["financial analyst", "finance analyst", "business analyst finance", "credit analyst", "fp&a"]):
-        return "finance_analyst"
-    # Engineering sub-specialties
-    if any(w in v for w in ["electrical engineer", "electronics engineer", "power engineer", "rf engineer", "embedded"]):
-        return "engineering_electrical"
-    if any(w in v for w in ["civil engineer", "structural engineer", "geotechnical", "transportation engineer", "construction"]):
-        return "engineering_civil"
-    if any(w in v for w in ["mechanical engineer", "manufacturing engineer", "product engineer", "hvac", "aerospace", "automotive"]):
-        return "engineering_mechanical"
-    # Healthcare sub-specialties
-    if any(w in v for w in ["public health", "epidemiolog", "health policy", "community health", "global health"]):
-        return "healthcare_public"
-    if any(w in v for w in ["clinical researcher", "clinical trial", "medical researcher", "biomedical researcher"]):
-        return "healthcare_research"
-    if any(w in v for w in ["nurse", "doctor", "physician", "clinician", "medical officer", "pharmacist", "paramedic"]):
-        return "healthcare_clinician"
-    # Education sub-specialties
-    if any(w in v for w in ["edtech", "educational technology", "learning technology", "ed-tech"]):
-        return "education_edtech"
-    if any(w in v for w in ["instructional designer", "curriculum designer", "learning designer", "course designer"]):
-        return "education_designer"
-    if any(w in v for w in ["teacher", "educator", "instructor", "tutor", "lecturer", "professor"]):
-        return "education_teacher"
-    # Business sub-specialties
-    if any(w in v for w in ["product manager", "pm", "product owner"]):
-        return "business_pm"
-    if any(w in v for w in ["strategy", "strategist", "strategy consultant", "management consultant", "corporate strategy"]):
-        return "business_strategy"
-    if any(w in v for w in ["business analyst", "business analysis", "systems analyst"]):
-        return "business_analyst"
-    # Fall back to the broad domain catalog key
-    return _career_domain(career_name)
+    """Map a localized career name to a curriculum catalog key."""
+    return _catalog_resolver.resolve(career_name)
 
 
 def _slug(value: str, index: int) -> str:
@@ -1794,42 +1727,19 @@ def _module_objectives(lessons: List[str], language: str) -> List[str]:
 
 def build_fallback_learning_path(request: LearningPathRequest) -> LearningPathResponse:
     """Build a detailed, usable curriculum without an external AI call."""
-    language = request.language
-    copy = COMMON[language]
-    catalog_key = _find_catalog_key(request.career_name)
-    # Try sub-specialty first, then broad domain, then localized generic.
-    seeds = SUB_CATALOGS.get(catalog_key) or CATALOGS.get(catalog_key)
-    if seeds is None:
-        seeds = LOCALIZED_GENERIC_SEEDS.get(language, LOCALIZED_GENERIC_SEEDS["en"])
-    total = len(seeds)
-    modules = []
-    for index, (title, description, lessons, resources) in enumerate(seeds, 1):
-        module_id = _slug(title, index)
-        if index == 1:
-            duration = "3-4 weeks"
-        elif index == total:
-            duration = "2-3 weeks"
-        else:
-            duration = "4-6 weeks"
-        modules.append(LearningModule(
-            id=module_id,
-            title=title,
-            description=description,
-            duration=duration,
-            objectives=_module_objectives(lessons, language),
-            lessons=lessons,
-            project=copy["project"].format(topic=title),
-            resources=[
-                LearningResource(title=name, url=url, type=resource_type)
-                for name, url, resource_type in resources
-            ],
-            quiz=_quiz(module_id, title, lessons, language),
-        ))
-    return LearningPathResponse(
-        career_name=request.career_name,
-        overview=copy["overview"].format(career=request.career_name),
-        total_duration=copy["duration"],
-        modules=modules,
+    return _get_path_builder().build(request)
+
+
+@lru_cache(maxsize=1)
+def _get_path_builder() -> LearningPathBuilder:
+    """Create the process-wide immutable learning path builder."""
+    return LearningPathBuilder(
+        resolver=_catalog_resolver,
+        common=COMMON,
+        broad_catalogs=CATALOGS,
+        specialized_catalogs=SUB_CATALOGS,
+        generic_catalogs=LOCALIZED_GENERIC_SEEDS,
+        quiz_factory=_quiz,
     )
 
 
@@ -1842,29 +1752,16 @@ def _context_lessons(module_context: str) -> List[str]:
         Lessons: topic1; topic2; topic3; ...
         Project: ...
     """
-    for line in module_context.splitlines():
-        stripped = line.strip()
-        if re.match(r"(?i)^(lessons?|topics?|temalar|uroqlar|уроки|темы)\s*:", stripped):
-            raw = re.sub(r"(?i)^[^:]+:", "", stripped).strip()
-            items = [re.sub(r"^\d+\.\s*", "", part).strip() for part in re.split(r"[;,]", raw)]
-            items = [item for item in items if len(item) > 2]
-            if items:
-                return items[:5]
-    # Fallback: strip list markers and return non-empty lines
-    lines = [re.sub(r"^[\s\-*0-9.]+", "", ln).strip() for ln in module_context.splitlines()]
-    return [ln for ln in lines if len(ln) > 3][:5]
+    return list(_tutor_context.lessons(module_context))
 
 
 def _pick_lesson(lessons: List[str], text: str) -> str:
-    if not lessons:
-        return "the current module topic"
-    words = set(re.findall(r"[\w']+", text.lower()))
-    ranked = sorted(
-        lessons,
-        key=lambda lesson: len(words.intersection(re.findall(r"[\w']+", lesson.lower()))),
-        reverse=True,
-    )
-    return ranked[0]
+    return _tutor_context.pick_lesson(lessons, text)
+
+
+def build_streaming_suggestions(module_context: str, module_title: str, language: str) -> List[str]:
+    """Generate contextual follow-up suggestions from module context without an AI call."""
+    return _tutor_context.suggestions(module_context, module_title, language)
 
 
 def build_fallback_chat(request: ModuleChatRequest) -> ModuleChatResponse:

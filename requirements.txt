@@ -6,7 +6,7 @@ python-multipart==0.0.9
 # Database
 sqlalchemy==2.0.25
 alembic==1.13.1
-aiosqlite==0.20.0
+aiosqlite==0.22.1
 eskiz-sms==1.0.1
 
 # Authentication

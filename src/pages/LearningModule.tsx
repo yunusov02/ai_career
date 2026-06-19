@@ -58,7 +58,10 @@ export function LearningModule() {
     `Objectives: ${module.objectives.join('; ')}`,
     `Lessons: ${module.lessons.join('; ')}`,
     `Project: ${module.project}`,
-  ].join('\n');
+    module.quiz.length > 0
+      ? `Quiz topics: ${module.quiz.map((q) => q.question).join('; ')}`
+      : '',
+  ].filter(Boolean).join('\n');
 
   const submitChat = async (
     event: FormEvent | { preventDefault: () => void },
@@ -84,13 +87,14 @@ export function LearningModule() {
     };
     try {
       let full = '';
-      for await (const chunk of careerApi.streamChatWithTutor(payload)) {
+      let streamedSuggestions: string[] = [];
+      for await (const chunk of careerApi.streamChatWithTutor(payload, (q) => { streamedSuggestions = q; })) {
         full += chunk;
         setStreamingContent(full);
       }
       const updated: ChatMessage[] = [...nextMessages, { role: 'assistant', content: full }];
       setMessages(updated);
-      setSuggestions([]);
+      setSuggestions(streamedSuggestions);
       localStorage.setItem(chatKey, JSON.stringify(updated));
     } catch {
       const errorText = language === 'uz'

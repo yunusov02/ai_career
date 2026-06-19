@@ -180,7 +180,7 @@ class CareerAdvisor:
                 model=self.model,
                 messages=messages,
                 temperature=0.4,
-                max_tokens=1500,
+                max_tokens=2000,
                 response_format=ModuleChatResponse,
             )
             tutor_response = response.choices[0].message.parsed
@@ -244,7 +244,7 @@ class CareerAdvisor:
                 model=self.model,
                 messages=messages,
                 temperature=0.4,
-                max_tokens=1500,
+                max_tokens=2000,
                 stream=True,
             )
             async for chunk in stream:

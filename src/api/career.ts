@@ -37,16 +37,19 @@ export const careerApi = {
   }): Promise<ModuleChatResponse> {
     return apiClient.post<ModuleChatResponse>('/guide/chat', data);
   },
-  streamChatWithTutor(data: {
-    language: 'uz' | 'ru' | 'en';
-    career_name: string;
-    module_title: string;
-    module_context: string;
-    learning_path_id?: number;
-    module_id?: string;
-    messages: ChatMessage[];
-  }): AsyncGenerator<string> {
-    return apiClient.streamPost('/guide/chat/stream', data);
+  streamChatWithTutor(
+    data: {
+      language: 'uz' | 'ru' | 'en';
+      career_name: string;
+      module_title: string;
+      module_context: string;
+      learning_path_id?: number;
+      module_id?: string;
+      messages: ChatMessage[];
+    },
+    onSuggestedQuestions?: (questions: string[]) => void,
+  ): AsyncGenerator<string> {
+    return apiClient.streamPost('/guide/chat/stream', data, onSuggestedQuestions);
   },
   updateProgress(pathId: number, moduleId: string, completed: boolean) {
     return apiClient.put<Record<string, boolean>>(

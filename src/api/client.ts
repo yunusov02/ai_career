@@ -84,7 +84,11 @@ class ApiClient {
     });
   }
 
-  async *streamPost(endpoint: string, data: unknown): AsyncGenerator<string> {
+  async *streamPost(
+    endpoint: string,
+    data: unknown,
+    onSuggestedQuestions?: (questions: string[]) => void,
+  ): AsyncGenerator<string> {
     const tokens = this.getTokens();
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
@@ -119,6 +123,9 @@ class ApiClient {
           }
           if (typeof obj.chunk === 'string') yield obj.chunk;
           if (typeof obj.error === 'string') throw new Error(obj.error);
+          if (Array.isArray(obj.suggested_questions) && onSuggestedQuestions) {
+            onSuggestedQuestions(obj.suggested_questions as string[]);
+          }
         }
       }
     } finally {

@@ -37,7 +37,7 @@ class QuizOption(BaseModel):
 class ModuleQuizQuestion(BaseModel):
     id: str
     question: str
-    options: List[QuizOption] = Field(..., min_length=2, max_length=5)
+    options: List[QuizOption] = Field(..., min_length=4, max_length=4)
     correct_option_id: str
     explanation: str
 
@@ -47,11 +47,11 @@ class LearningModule(BaseModel):
     title: str
     description: str
     duration: str
-    objectives: List[str] = Field(..., min_length=2)
-    lessons: List[str] = Field(..., min_length=3)
+    objectives: List[str] = Field(..., min_length=3, max_length=3)
+    lessons: List[str] = Field(..., min_length=5, max_length=5)
     project: str
-    resources: List[LearningResource] = Field(..., min_length=2)
-    quiz: List[ModuleQuizQuestion] = Field(..., min_length=5, max_length=7)
+    resources: List[LearningResource] = Field(..., min_length=2, max_length=4)
+    quiz: List[ModuleQuizQuestion] = Field(..., min_length=5, max_length=5)
 
 
 class LearningPathResponse(BaseModel):
@@ -59,7 +59,7 @@ class LearningPathResponse(BaseModel):
     career_name: str
     overview: str
     total_duration: str
-    modules: List[LearningModule] = Field(..., min_length=5)
+    modules: List[LearningModule] = Field(..., min_length=6, max_length=6)
 
 
 class ChatMessage(BaseModel):
@@ -79,7 +79,11 @@ class ModuleChatRequest(BaseModel):
 
 class ModuleChatResponse(BaseModel):
     answer: str
-    suggested_questions: List[str] = Field(default_factory=list, max_length=3)
+    suggested_questions: List[str] = Field(
+        default_factory=list,
+        min_length=0,
+        max_length=3,
+    )
 
 
 class ModuleProgressRequest(BaseModel):

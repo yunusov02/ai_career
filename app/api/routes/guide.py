@@ -29,6 +29,7 @@ from app.services.guide_service import build_fallback_recommendations
 from app.services.learning_service import (
     build_fallback_chat,
     build_fallback_learning_path,
+    build_streaming_suggestions,
 )
 from app.services.history_service import HistoryService
 from app.services.question_service import build_fallback_questions
@@ -49,7 +50,9 @@ async def list_career_paths(
 ):
     """Return all active career paths from the database."""
     result = await db.execute(
-        select(CareerPath).where(CareerPath.is_active == True).order_by(CareerPath.id)  # noqa: E712
+        select(CareerPath)
+        .where(CareerPath.is_active == True)
+        .order_by(CareerPath.id)  # noqa: E712
     )
     paths = result.scalars().all()
     lang = language if language in ("en", "ru", "uz") else "en"
@@ -75,7 +78,9 @@ async def generate_questions(
     try:
         return await advisor.generate_questions(request)
     except AIServiceError as exc:
-        logger.warning(f"AI unavailable for question generation ({exc.message}), using fallback")
+        logger.warning(
+            f"AI unavailable for question generation ({exc.message}), using fallback"
+        )
         return build_fallback_questions(request)
 
 
@@ -112,7 +117,9 @@ async def analyze_guide(
     try:
         result = await advisor.analyze_assessment(answers)
     except AIServiceError as exc:
-        logger.warning(f"AI unavailable for guide analysis ({exc.message}), using fallback")
+        logger.warning(
+            f"AI unavailable for guide analysis ({exc.message}), using fallback"
+        )
         result = build_fallback_recommendations(request)
 
     await HistoryService(db).save_assessment(current_user.id, request, result)
@@ -130,7 +137,9 @@ async def create_learning_path(
     try:
         path = await advisor.generate_learning_path(request)
     except AIServiceError as exc:
-        logger.warning(f"AI unavailable for learning path ({exc.message}), using fallback")
+        logger.warning(
+            f"AI unavailable for learning path ({exc.message}), using fallback"
+        )
         path = build_fallback_learning_path(request)
 
     saved = await HistoryService(db).save_learning_path(current_user.id, path)
@@ -149,15 +158,19 @@ async def chat_with_module_tutor(
     try:
         response = await advisor.chat_about_module(request)
     except AIServiceError as exc:
-        logger.warning(f"AI unavailable for module chat ({exc.message}), using fallback")
+        logger.warning(
+            f"AI unavailable for module chat ({exc.message}), using fallback"
+        )
         response = build_fallback_chat(request)
 
     persisted_messages = [
         *request.messages,
         ChatMessage(role="assistant", content=response.answer),
     ]
-    request.messages = persisted_messages
-    await HistoryService(db).save_chat(current_user.id, request)
+    persisted_request = request.model_copy(
+        update={"messages": persisted_messages},
+    )
+    await HistoryService(db).save_chat(current_user.id, persisted_request)
     return response
 
 
@@ -176,25 +189,38 @@ async def stream_chat(
             payload = json.dumps({"chunk": fallback.answer})
             yield f"data: {payload}\n\n"
             if fallback.suggested_questions:
-                sq_payload = json.dumps({"suggested_questions": fallback.suggested_questions})
+                sq_payload = json.dumps(
+                    {"suggested_questions": fallback.suggested_questions}
+                )
                 yield f"data: {sq_payload}\n\n"
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(fallback_stream(), media_type="text/event-stream")
 
     async def ai_stream():
+        success = False
         try:
             async for chunk in advisor.stream_chat(request):
                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+            success = True
         except AIServiceError as exc:
             yield f"data: {json.dumps({'error': exc.message})}\n\n"
         finally:
+            if success:
+                suggestions = build_streaming_suggestions(
+                    request.module_context,
+                    request.module_title,
+                    request.language,
+                )
+                yield f"data: {json.dumps({'suggested_questions': suggestions})}\n\n"
             yield "data: [DONE]\n\n"
 
     return StreamingResponse(ai_stream(), media_type="text/event-stream")
 
 
-@router.put("/learning-path/{path_id}/modules/{module_id}", response_model=dict[str, bool])
+@router.put(
+    "/learning-path/{path_id}/modules/{module_id}", response_model=dict[str, bool]
+)
 async def update_module_progress(
     path_id: int,
     module_id: str,
