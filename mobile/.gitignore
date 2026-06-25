@@ -1,0 +1,82 @@
+# ==============================================================================
+# 1. DART VA FLUTTER VOSITALARI (Avtomatik yaratiladigan kesh va yordamchi fayllar)
+# ==============================================================================
+# Ushbu papka kesh, analizator ma'lumotlari va paketlar xaritasini saqlaydi (siz yuqorida so'ragan papka)
+.dart_tool/
+# Loyiha kompilatsiya qilinganda yaratiladigan build fayllari (APK, IPA va h.k.)
+build/
+# Dart paketlarining eski usuldagi kesh fayllari
+.packages
+.pub-cache/
+.pub/
+# Avtomatik generatsiya qilinadigan xatolik loglari
+*.log
+# Flutter xatoliklari haqidagi hisobotlar
+flutter_*.log
+# Mahalliy pub konfiguratsiyasi
+pubspec.lock
+
+# ==============================================================================
+# 2. XAVFSIZLIK VA MAXFIY MA'LUMOTLAR (Eng muhim qism)
+# ==============================================================================
+# Api kalitlar, parollar va maxfiy konfiguratsiyalar saqlanadigan fayllar
+.env
+.env*
+# Android uchun ilovani imzolash kalitlari (Hech qachon GitHub'ga yuklamang!)
+*.keystore
+*.jks
+key.properties
+
+# ==============================================================================
+# 3. IDE VA MUHIT FAYLLARI (Dasturchining kompyuteriga bog'liq sozlamalar)
+# ==============================================================================
+# Android Studio / IntelliJ IDEA konfiguratsiyalari
+.idea/
+*.iml
+*.ipr
+*.iws
+# VS Code sozlamalari (agar butun jamoa bir xil sozlama ishlatmasa, buni e'tiborsiz qoldirish kerak)
+.vscode/
+# Mac OS tizimi tomonidan yaratiladigan yashirin fayllar
+.DS_Store
+
+# ==============================================================================
+# 4. ANDROID PLATFORMASI UCHUN KERAKSIZ FAYLLAR
+# ==============================================================================
+# Android SDK yo'li va mahalliy muhit ma'lumotlari
+android/local.properties
+# Gradle tizimining kesh va vaqtinchalik fayllari
+android/.gradle/
+android/app/build/
+android/captures/
+# Android Studio tomonidan yaratiladigan navigatsiya ma'lumotlari
+android/.cxx/
+android/.navigation/
+
+# ==============================================================================
+# 5. IOS VA MACOS PLATFORMALARI UCHUN KERAKSIZ FAYLLAR
+# ==============================================================================
+# CocoaPods tomonidan yuklab olingan iOS paketlari (faqat Podfile va Podfile.lock saqlanadi)
+ios/Pods/
+macOS/Pods/
+# Flutter'ning iOS uchun yaratgan vaqtinchalik simvolik havolalari
+ios/.symlinks/
+macOS/Flutter/ephemeral
+# Flutter frameworkining o'zi (hajmi katta bo'ladi, yuklash shart emas)
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+# Xcode tomonidan yaratiladigan user state va vaqtinchalik fayllar
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+xcuserdata/
+# Crashlytics kabi vositalarning vaqtinchalik fayllari
+*.hmap
+
+# ==============================================================================
+# 6. WEB PLATFORMASI
+# ==============================================================================
+# Web arxitekturasi uchun vaqtinchalik build fayllari
+.dart_tool/build/
+.dart_tool/dartpad/

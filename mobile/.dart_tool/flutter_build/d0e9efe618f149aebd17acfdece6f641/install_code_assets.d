@@ -1,1 +1,0 @@
- D:\\ai_carrer\\mobile\\.dart_tool\\flutter_build\\d0e9efe618f149aebd17acfdece6f641\\native_assets.json: 

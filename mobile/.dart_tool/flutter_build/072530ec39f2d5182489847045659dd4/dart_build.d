@@ -1,1 +1,0 @@
- D:\\ai_carrer\\mobile\\.dart_tool\\flutter_build\\072530ec39f2d5182489847045659dd4\\dart_build_result.json:  C:\\tools\\flutter\\bin\\cache\\dart-sdk\\version D:\\ai_carrer\\mobile\\.dart_tool\\package_config.json D:\\ai_carrer\\mobile\\pubspec.yaml d:\\ai_carrer\\mobile\\.dart_tool\\package_config.json
