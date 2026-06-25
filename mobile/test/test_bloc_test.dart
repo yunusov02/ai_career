@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skillbridge/domain/entities/career.dart';
 import 'package:skillbridge/domain/entities/question.dart';
+import 'package:skillbridge/domain/entities/assessment_result.dart';
 import 'package:skillbridge/domain/repositories/career_repository.dart';
 import 'package:skillbridge/domain/usecases/get_test_questions.dart';
 import 'package:skillbridge/domain/usecases/submit_test_answers.dart';
@@ -20,7 +21,7 @@ class FakeGetTestQuestionsUseCase extends GetTestQuestionsUseCase {
   bool shouldThrow = false;
 
   @override
-  Future<List<Question>> call(String category, String locale) async {
+  Future<List<Question>> call(List<String> interests, String locale) async {
     if (shouldThrow) throw Exception('API error');
     return questions;
   }
@@ -29,17 +30,18 @@ class FakeGetTestQuestionsUseCase extends GetTestQuestionsUseCase {
 class FakeSubmitTestAnswersUseCase extends SubmitTestAnswersUseCase {
   FakeSubmitTestAnswersUseCase(super.repository);
 
-  List<Career> careers = [];
+  AssessmentResult? result;
   bool shouldThrow = false;
 
   @override
-  Future<List<Career>> call({
-    required String parentCategory,
-    required Map<String, String> answers,
+  Future<AssessmentResult> call({
+    required List<String> interests,
+    required Map<String, int> answers,
     required String locale,
   }) async {
     if (shouldThrow) throw Exception('API error');
-    return careers;
+    if (result == null) throw Exception('No result configured');
+    return result!;
   }
 }
 
@@ -80,6 +82,13 @@ void main() {
       fitReason: 'Great match',
     );
 
+    final assessmentResult = AssessmentResult(
+      personalitySummary: 'Great personality',
+      strengths: ['Coding'],
+      weaknesses: ['Design'],
+      recommendedCareers: [career],
+    );
+
     setUp(() {
       final repository = FakeCareerRepository();
       getQuestionsUseCase = FakeGetTestQuestionsUseCase(repository);
@@ -100,14 +109,14 @@ void main() {
 
     test('LoadQuestionsEvent loads questions successfully and emits QuestionsLoaded', () async {
       getQuestionsUseCase.questions = [q1, q2];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
 
       expectLater(
         bloc.stream,
         emitsInOrder([
           const QuestionsLoading(),
           QuestionsLoaded(
-            category: 'it',
+            interests: const ['it'],
             questions: [q1, q2],
             answers: const {},
             currentIndex: 0,
@@ -118,43 +127,43 @@ void main() {
 
     test('LoadQuestionsEvent empty list emits TestError', () async {
       getQuestionsUseCase.questions = [];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
 
       expectLater(
         bloc.stream,
         emitsInOrder([
           const QuestionsLoading(),
-          const TestError('error'),
+          const TestError('error', previousState: TestInitial()),
         ]),
       );
     });
 
     test('LoadQuestionsEvent error emits TestError', () async {
       getQuestionsUseCase.shouldThrow = true;
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
 
       expectLater(
         bloc.stream,
         emitsInOrder([
           const QuestionsLoading(),
-          const TestError('error'),
+          const TestError('error', previousState: TestInitial()),
         ]),
       );
     });
 
     test('SelectAnswerEvent stores answer in state', () async {
       getQuestionsUseCase.questions = [q1, q2];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first; // Wait until loaded
 
-      bloc.add(const SelectAnswerEvent(questionId: 'q1', selectedOptionId: 'o1'));
+      bloc.add(const SelectAnswerEvent(questionId: 'q1', score: 5));
 
       expectLater(
         bloc.stream,
         emits(QuestionsLoaded(
-          category: 'it',
+          interests: const ['it'],
           questions: [q1, q2],
-          answers: const {'q1': 'o1'},
+          answers: const {'q1': 5},
           currentIndex: 0,
         )),
       );
@@ -162,7 +171,7 @@ void main() {
 
     test('NextQuestionEvent advances page index', () async {
       getQuestionsUseCase.questions = [q1, q2];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
       bloc.add(const NextQuestionEvent());
@@ -170,7 +179,7 @@ void main() {
       expectLater(
         bloc.stream,
         emits(QuestionsLoaded(
-          category: 'it',
+          interests: const ['it'],
           questions: [q1, q2],
           answers: const {},
           currentIndex: 1,
@@ -180,13 +189,13 @@ void main() {
 
     test('NextQuestionEvent on last question does nothing', () async {
       getQuestionsUseCase.questions = [q1];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
       bloc.add(const NextQuestionEvent());
       // No extra states should emit since we are on the last question.
       expect(bloc.state, QuestionsLoaded(
-        category: 'it',
+        interests: const ['it'],
         questions: [q1],
         answers: const {},
         currentIndex: 0,
@@ -195,7 +204,7 @@ void main() {
 
     test('PreviousQuestionEvent decrements page index', () async {
       getQuestionsUseCase.questions = [q1, q2];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
       bloc.add(const NextQuestionEvent());
@@ -206,7 +215,7 @@ void main() {
       expectLater(
         bloc.stream,
         emits(QuestionsLoaded(
-          category: 'it',
+          interests: const ['it'],
           questions: [q1, q2],
           answers: const {},
           currentIndex: 0,
@@ -216,12 +225,12 @@ void main() {
 
     test('PreviousQuestionEvent on first question does nothing', () async {
       getQuestionsUseCase.questions = [q1, q2];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
       bloc.add(const PreviousQuestionEvent());
       expect(bloc.state, QuestionsLoaded(
-        category: 'it',
+        interests: const ['it'],
         questions: [q1, q2],
         answers: const {},
         currentIndex: 0,
@@ -230,27 +239,27 @@ void main() {
 
     test('SubmitTestEvent submits successfully and emits TestCompleted', () async {
       getQuestionsUseCase.questions = [q1];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
-      bloc.add(const SelectAnswerEvent(questionId: 'q1', selectedOptionId: 'o1'));
+      bloc.add(const SelectAnswerEvent(questionId: 'q1', score: 4));
       await bloc.stream.first;
 
-      submitAnswersUseCase.careers = [career];
+      submitAnswersUseCase.result = assessmentResult;
       bloc.add(const SubmitTestEvent('uz'));
 
       expectLater(
         bloc.stream,
         emitsInOrder([
           const TestSubmitting(),
-          TestCompleted([career]),
+          TestCompleted(assessmentResult),
         ]),
       );
     });
 
     test('SubmitTestEvent error emits TestError', () async {
       getQuestionsUseCase.questions = [q1];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
       submitAnswersUseCase.shouldThrow = true;
@@ -260,14 +269,14 @@ void main() {
         bloc.stream,
         emitsInOrder([
           const TestSubmitting(),
-          const TestError('error'),
+          TestError('error', previousState: QuestionsLoaded(interests: const ['it'], questions: [q1])),
         ]),
       );
     });
 
     test('ResetTestEvent returns state to TestInitial', () async {
       getQuestionsUseCase.questions = [q1];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
       bloc.add(const ResetTestEvent());
@@ -280,17 +289,17 @@ void main() {
 
     test('SkipAndSubmitTestEvent auto-fills and submits test successfully', () async {
       getQuestionsUseCase.questions = [q1, q2];
-      bloc.add(const LoadQuestionsEvent(category: 'it', locale: 'uz'));
+      bloc.add(const LoadQuestionsEvent(interests: ['it'], locale: 'uz'));
       await bloc.stream.skip(1).first;
 
-      submitAnswersUseCase.careers = [career];
+      submitAnswersUseCase.result = assessmentResult;
       bloc.add(const SkipAndSubmitTestEvent('uz'));
 
       expectLater(
         bloc.stream,
         emitsInOrder([
           const TestSubmitting(),
-          TestCompleted([career]),
+          TestCompleted(assessmentResult),
         ]),
       );
     });
